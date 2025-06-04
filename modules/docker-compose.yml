@@ -1,1 +1,84 @@
+# version: '3.8'
 
+services:
+  customer:
+    build: ./customer/
+    image: customer
+    entrypoint:
+      - venv/bin/python
+      - start.py
+    container_name: customer
+    environment:
+      - MODULE_NAME=customer
+    ports:
+      - 6001:6001
+    networks:
+      - my_network
+
+  base:
+    build: ./base/
+    image: base
+    entrypoint: 
+      - venv/bin/python
+      - start.py
+    container_name: base
+    environment:
+      - MODULE_NAME=base
+    ports:
+      - 6002:6002
+    networks:
+      - my_network
+    depends_on:
+      - customer
+
+  planningsystem:
+    build: ./planningsystem/
+    image: planningsystem
+    entrypoint: 
+      - venv/bin/python
+      - start.py
+    container_name: planningsystem
+    environment:
+      - MODULE_NAME=planningsystem
+    ports:
+      - 6004:6004
+    networks:
+      - my_network
+    depends_on:
+      - customer
+
+  tsodd:
+    build: ./tsodd/
+    image: tsodd
+    entrypoint: 
+      - venv/bin/python
+      - start.py
+    container_name: tsodd
+    environment:
+      - MODULE_NAME=tsodd
+    ports:
+      - 6003:6003
+    networks:
+      - my_network
+    depends_on:
+      - planningsystem
+
+  fura:
+    build: ./fura/
+    image: fura
+    entrypoint: 
+      - venv/bin/python
+      - start.py
+    container_name: fura
+    environment:
+      - MODULE_NAME=fura
+    ports:
+      - 6005:6005
+    networks:
+      - my_network
+    depends_on:
+      - planningsystem
+
+networks:
+  my_network:
+    driver: bridge
