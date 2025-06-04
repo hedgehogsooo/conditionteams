@@ -1,0 +1,86 @@
+@startuml НС-2
+title Выполнение задания
+autonumber
+
+
+actor "Заказчик" as operator
+participant "Система планирования маршрута" as planingsystem
+participant "ЦОДД" as TSODD
+participant "1. Связь" as connection
+participant "2. Центральная система управления" as centralsystem
+participant "6. Навигация" as navigation #Red
+participant "9. Иполнительные устройства " as actuators 
+participant "8. Управление движением" as traficcontrol
+participant "3. Принятие решений" as spr
+participant "4. Сбор и обработка данных" as data
+participant "10. Самодиагностика" as diagnoctik
+
+
+operator -> planingsystem: Информацию о заказе
+planingsystem-> connection: информация о миссии
+connection -> centralsystem : Маршрутный лист
+navigation -[#Red]> centralsystem : Текущие координаты
+centralsystem -[#Red]> centralsystem ++: Расчет маршрута
+centralsystem -[#Red]> connection: Рассчитаный маршрут
+connection -[#Red]> TSODD ++: Рассчитаный маршрут
+TSODD -[#Red]> TSODD : Проверка маршрута \nи регистрация транспорта
+TSODD -[#Red]> connection--: разрешение на выезд 
+connection -> centralsystem : разрешение на выезд 
+diagnoctik -> centralsystem : Состояние систем 
+
+
+group следование по маршруту
+centralsystem -[#Red]>  traficcontrol: Начать движение \n к контрольной зоне
+traficcontrol -> actuators++: Управляющие команды
+actuators -> actuators--: Выполнение \n управляющих команд
+traficcontrol -> spr: Корректировка управляющих команд
+traficcontrol++
+spr++
+spr -> data: Запрос данных
+data -> spr: Данные окружающей среды автомобиля
+spr -> traficcontrol: Расчет управляющих команд
+spr--
+traficcontrol--
+traficcontrol -> actuators++: управляющие команды
+actuators -> actuators--: Выполнение \n управляющих команд
+navigation -[#Red]> centralsystem: Координаты
+centralsystem -[#Red]> centralsystem: Проверка прибытия в контрольную зону
+end
+
+
+centralsystem -[#Red]> diagnoctik: Прибытие в контрольную точку
+group Груз
+diagnoctik -> centralsystem: Информация о состоянии груза
+navigation -[#Red]> centralsystem: Координаты
+centralsystem -[#Red]> centralsystem: Проверка выполнения маршрутного листа
+end
+
+
+group Завершение 
+navigation -[#Red]> centralsystem: Текущие координаты
+centralsystem -[#Red]> centralsystem: Расчет маршрута
+centralsystem -[#Red]>  traficcontrol: Начать движение к базе 
+traficcontrol -> actuators++: Управляющие команды
+
+
+traficcontrol -> spr: Корректировка управляющих команд
+traficcontrol++
+spr++
+spr -> data: Запрос данных
+data -> spr: Данные окружающей среды автомобиля
+spr -> traficcontrol: Расчет управляющих команд
+spr--
+traficcontrol--
+
+traficcontrol -> actuators++: управляющие команды
+actuators -> actuators--: Выполнение \n управляющих команд
+navigation -[#Red]> centralsystem: Координаты
+end
+
+
+centralsystem -> connection--: миссия завершена
+connection -> planingsystem: миссия завершена 
+planingsystem -> operator: миссия завершена
+
+
+@enduml

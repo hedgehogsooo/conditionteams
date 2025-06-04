@@ -1,0 +1,32 @@
+@startuml Базовая схема
+title Выполнение задания
+
+
+participant "Система планирования маршрута" as planingsystem
+participant "ЦОДД" as TSODD
+participant "1. Связь" as connection
+participant "2. Центральная система управления" as centralsystem
+participant "6. Навигация" as navigation
+participant "9. Иполнительные устройства " as actuators 
+participant "8. Управление движением" as traficcontrol
+participant "3. Принятие решений" as spr
+participant "4. Сбор и обработка данных" as data
+participant "5. Система мониторинга груза" as monitorint
+participant "10. Самодиагностика" as diagnoctik
+
+
+planingsystem-> connection: информация о миссии
+connection -> centralsystem : Маршрутный лист
+navigation -> centralsystem : Текущие координаты
+centralsystem -> centralsystem : Расчет маршрута
+centralsystem -> TSODD ++: Рассчитаный маршрут
+TSODD -> TSODD : Проверка маршрута \nи регистрация транспорта
+TSODD -> connection--: разрешение на выезд 
+connection -> centralsystem : разрешение на выезд 
+diagnoctik -> centralsystem : Состояние систем 
+
+
+
+
+
+@enduml
