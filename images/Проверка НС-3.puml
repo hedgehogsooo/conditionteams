@@ -1,5 +1,5 @@
 @startuml Проверка НС-3
-title Выполнение задания
+title Проверка негативного сценария 3
 autonumber
 
 participant "Оркестратор задач" as orkestr

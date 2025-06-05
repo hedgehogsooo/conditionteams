@@ -1,5 +1,5 @@
-@startuml Проверка НС-7
-title Выполнение задания
+@startuml Проверка НС-6
+title Проверка негативного сценария 6
 autonumber
 participant "Аварийный блок" as emergency_bloc #LimeGreen
 participant "Аварийное снижение скорости" as reduction_speed #LimeGreen
