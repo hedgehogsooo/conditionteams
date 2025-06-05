@@ -1,0 +1,20 @@
+@startuml Проверка НС-6
+title Выполнение задания
+autonumber
+
+
+
+participant "ЦОДД" as TSODD
+participant "Связь" as connection #Red
+
+participant "Блок шифрования каналов" as shifr #LimeGreen
+
+
+shifr -> connection : Зашифрованный рассчитанный маршрут \n и \n координаты
+connection -> TSODD++ : Зашифрованный рассчитанынй маршрут \n и \n координаты
+
+TSODD -> TSODD : Проверка маршрута и регистрация т/с
+TSODD -> connection-- : Зашифрованное разрешение на выезд
+connection -[#Red]> shifr : Зашифрованное разрешение на выезд 
+shifr -[#Green]> shifr : Не удалось расшифровать \n поломанный пакет
+

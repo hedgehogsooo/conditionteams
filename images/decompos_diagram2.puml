@@ -1,0 +1,272 @@
+@startuml Функциональная декомпозированная схема
+title Выполнение задания
+autonumber
+
+
+actor "Заказчик" as operator
+participant "Система планирования маршрута" as planingsystem
+participant "ЦОДД" as TSODD
+participant "Связь" as connection
+
+participant "Блок шифрования каналов" as shifr
+
+participant "Оркестратор задач" as orkestr
+
+participant "Планировщик маршрута" as planing_navigation
+participant "Аварийный блок" as emergency_bloc
+participant "Система мониторнинга груза" as monitor_gryz
+participant "Аварийное снижение скорости" as reduction_speed
+participant "Комплексирование" as komplex
+participant "Навигация ИНС" as navigation_ins
+participant "Навигация GNSS " as navigation_gnss
+
+
+participant "Управление движением " as motion_control 
+participant "Руление" as taxiing
+participant "Система руления" as system_taxiing
+participant "Управление двигателем" as engine_management
+participant "Разгон и торможение" as acceleration_and_braking
+participant "Сигнальные системы" as signal_system
+ 
+participant "Принятие решений" as spr
+participant "Обработка данных" as data
+participant "ИК-датчик" as ir_sensor
+participant "Лидар" as lidar
+participant "Камеры" as camers
+
+participant "Самодиагностика" as diagnostik
+
+operator -> planingsystem : Информация о заказе
+planingsystem -> TSODD : Зашифрованный маршрутный \n лист (хэш)
+planingsystem -> connection : Зашифрованный маршрутный \n лист (хэш)
+connection -> shifr : Зашифрованный маршрутный \n лист (хэш)
+shifr -> shifr : Расшифровка маршрутного \n листа
+shifr -> orkestr : Маршрутный лист(хэш)
+orkestr -> orkestr : Сверка хэша
+orkestr -> planing_navigation : Маршрутный лист
+
+navigation_gnss -> komplex : Текущие координаты(GNSS)
+navigation_ins -> komplex : Текущие координаты(ИНС)
+komplex -> komplex : Комплексирование
+komplex -> emergency_bloc : Координаты
+komplex -> planing_navigation : Координаты
+planing_navigation -> planing_navigation : Планрование маршрута
+planing_navigation -> orkestr : Рассчитанный маршрут \n и \n текущие координаты
+orkestr -> shifr : Рассчитанный маршрут \n и \n текущие координаты
+
+shifr -> shifr : Шифрование Рассчитанного маршрута \n и \n текущих координат
+shifr -> connection : Зашифрованный рассчитанный маршрут \n и \n координаты
+connection -> TSODD++ : Зашифрованный рассчитанынй маршрут \n и \n координаты
+
+TSODD -> TSODD : Проверка маршрута и регистрация т/с
+TSODD -> connection-- : Зашифрованное разрешение на выезд
+connection -> shifr : Зашифрованное разрешение на выезд 
+shifr -> shifr : Расшифровка разрешения на выезд 
+shifr -> orkestr : Разрешение на выезд
+orkestr -> orkestr : Сверка хэша
+
+orkestr -> emergency_bloc : Спланированный маршрут
+
+group Следование по маршруту
+monitor_gryz -> emergency_bloc : Состояние груза 
+diagnostik -> orkestr ++: Состояние систем
+
+orkestr -> planing_navigation : Расчет маршрута \nдо контрольной точке 
+navigation_gnss -> komplex : Текущие координаты(GNSS)
+navigation_ins -> komplex : Текущие координаты(ИНС)
+komplex -> komplex : Комплексирование
+komplex -> emergency_bloc : Координаты
+emergency_bloc -> emergency_bloc : Проверка следования, скорости
+komplex -> planing_navigation : Координаты
+planing_navigation -> orkestr : Расчитанный маршрут до контрольной точке
+orkestr -> motion_control : Начать движение к контрольной точке
+
+motion_control -> taxiing : Управляющие команды
+motion_control ++
+taxiing ++
+taxiing -> system_taxiing : Управляющие команды
+taxiing --
+system_taxiing ++
+system_taxiing -> system_taxiing : Выполнение управляющих команд
+system_taxiing --
+motion_control -> engine_management : Управляющие команды
+engine_management ++
+engine_management -> acceleration_and_braking : Управляющие команды
+engine_management --
+acceleration_and_braking ++ 
+acceleration_and_braking -> acceleration_and_braking : Выполнение управляющих команд
+acceleration_and_braking --
+motion_control -> signal_system : Управляющие команды
+signal_system ++ 
+signal_system -> signal_system: Выполнение управляющий команд 
+signal_system --
+
+motion_control -> spr ++: Корректировка управляющих команд
+spr -> data : Запрос данных окружающей среды т/с
+
+camers -> data : Данные с камер 
+camers++
+camers--
+lidar -> data : Данные с лидара 
+lidar++
+lidar--
+ir_sensor -> data : Данные с ИК-датчиков 
+ir_sensor++
+ir_sensor--
+
+data --
+data -> spr : Данные окружающей среды т/с
+spr -> spr : Расчет управляющих команд 
+spr -> motion_control : Скорректированные управляющие команды
+spr--
+
+navigation_gnss -> komplex : Текущие координаты(GNSS)
+navigation_ins -> komplex : Текущие координаты(ИНС)
+komplex -> komplex : Комплексирование
+komplex -> emergency_bloc : Координаты
+motion_control -> orkestr : В случае аварийной обстановки
+motion_control --
+orkestr -> emergency_bloc : Аварийная обстановка
+emergency_bloc -> reduction_speed : Аварийное снижение скорости
+
+motion_control -> taxiing : Управляющие команды
+motion_control ++
+taxiing ++
+taxiing -> system_taxiing : Управляющие команды
+taxiing --
+system_taxiing ++
+system_taxiing -> system_taxiing : Выполнение управляющих команд
+system_taxiing --
+motion_control -> engine_management : Управляющие команды
+engine_management ++
+engine_management -> acceleration_and_braking : Управляющие команды
+engine_management --
+acceleration_and_braking ++ 
+acceleration_and_braking -> acceleration_and_braking : Выполнение управляющих команд
+acceleration_and_braking --
+motion_control -> signal_system : Управляющие команды
+signal_system ++ 
+signal_system -> signal_system: Выполнение управляющий команд 
+signal_system --
+
+navigation_gnss -> komplex : Текущие координаты(GNSS)
+navigation_ins -> komplex : Текущие координаты(ИНС)
+komplex -> komplex : Комплексирование
+komplex -> emergency_bloc : Координатыs
+komplex -> planing_navigation : Координатыs
+planing_navigation -> planing_navigation : Проверка прибытия в контрольную точку
+planing_navigation -> orkestr : Прибытие в контрольную точку
+
+end
+
+group Груз 
+monitor_gryz -> monitor_gryz : Проверка загруженности 
+monitor_gryz -> emergency_bloc : Груз загружен/разгружен
+orkestr -> orkestr : Проверка выполнения маршрутного листа
+end
+
+group Завершение 
+
+navigation_gnss -> komplex : Текущие координаты(GNSS)
+navigation_ins -> komplex : Текущие координаты(ИНС)
+komplex -> komplex : Комплексирование
+komplex -> emergency_bloc : Координаты
+komplex -> planing_navigation : Текущие координаты 
+planing_navigation -> planing_navigation : Расчет маршрута до базы
+planing_navigation -> orkestr : Рассчитанный маршрут до базы
+
+orkestr -> motion_control : Начать движение к контрольной точке
+
+motion_control -> taxiing : Управляющие команды
+motion_control ++
+taxiing ++
+taxiing -> system_taxiing : Управляющие команды
+taxiing --
+system_taxiing ++
+system_taxiing -> system_taxiing : Выполнение управляющих команд
+system_taxiing --
+motion_control -> engine_management : Управляющие команды
+engine_management ++
+engine_management -> acceleration_and_braking : Управляющие команды
+engine_management --
+acceleration_and_braking ++ 
+acceleration_and_braking -> acceleration_and_braking : Выполнение управляющих команд
+acceleration_and_braking --
+motion_control -> signal_system : Управляющие команды
+signal_system ++ 
+signal_system -> signal_system: Выполнение управляющий команд 
+signal_system --
+
+motion_control -> spr ++: Корректировка управляющих команд
+spr -> data : Запрос данных окружающей среды т/с
+
+camers -> data : Данные с камер 
+camers++
+camers--
+lidar -> data : Данные с лидара 
+lidar++
+lidar--
+ir_sensor -> data : Данные с ИК-датчиков 
+ir_sensor++
+ir_sensor--
+
+data --
+data -> spr : Данные окружающей среды т/с
+spr -> spr : Расчет управляющих команд 
+spr -> motion_control : Скорректированные управляющие команды
+spr--
+
+navigation_gnss -> komplex : Текущие координаты(GNSS)
+navigation_ins -> komplex : Текущие координаты(ИНС)
+komplex -> komplex : Комплексирование
+komplex -> emergency_bloc : Координаты
+motion_control -> orkestr : В случае аварийной обстановки
+motion_control --
+orkestr -> emergency_bloc : Аварийная обстановка
+emergency_bloc -> reduction_speed : Аварийное снижение скорости
+
+motion_control -> taxiing : Управляющие команды
+motion_control ++
+taxiing ++
+taxiing -> system_taxiing : Управляющие команды
+taxiing --
+system_taxiing ++
+system_taxiing -> system_taxiing : Выполнение управляющих команд
+system_taxiing --
+motion_control -> engine_management : Управляющие команды
+engine_management ++
+engine_management -> acceleration_and_braking : Управляющие команды
+engine_management --
+acceleration_and_braking ++ 
+acceleration_and_braking -> acceleration_and_braking : Выполнение управляющих команд
+acceleration_and_braking --
+motion_control -> signal_system : Управляющие команды
+signal_system ++ 
+signal_system -> signal_system: Выполнение управляющий команд 
+signal_system --
+
+navigation_gnss -> komplex : Текущие координаты(GNSS)
+navigation_ins -> komplex : Текущие координаты(ИНС)
+komplex -> komplex : Комплексирование
+komplex -> emergency_bloc : Координатыs
+komplex -> planing_navigation : Координатыs
+komplex -> planing_navigation : Проверка прибытия на базу
+planing_navigation -> orkestr : Прибытие на базу
+
+end
+
+orkestr -> shifr : Миссия завершена 
+orkestr --
+shifr -> shifr : Шифрование сообщениия о завершении 
+shifr -> connection : Зашифрованное сообщение о завершении 
+connection -> planingsystem : Зашифрованное сообщение о завершении 
+planingsystem -> operator : Миссия завершена
+
+
+
+@enduml
+
+
+
+
+

@@ -1,0 +1,20 @@
+@startuml Проверка НС-1
+title Выполнение задания
+autonumber
+
+
+actor "Заказчик" as operator
+participant "Система планирования маршрута" as planingsystem
+participant "ЦОДД" as TSODD
+participant "Связь" as connection #Red
+
+participant "Блок шифрования каналов" as shifr #LimeGreen
+
+participant "Оркестратор задач" as orkestr
+
+operator -> planingsystem : Информация о заказе
+planingsystem -> TSODD : Зашифрованный маршрутный \n лист (хэш)
+planingsystem -> connection : Зашифрованный маршрутный \n лист (хэш)
+connection -[#Red]> shifr : Поломанный маршрутный лист 
+shifr -[#Green]> shifr : Не расшифрован, так как пакет изменен
+shifr -[#Green]> orkestr : Маршрутный лист не отправлен \n так как не удалось его расшифровать

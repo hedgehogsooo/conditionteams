@@ -1,0 +1,35 @@
+@startuml Проверка НС-2
+title Выполнение задания
+autonumber
+
+
+actor "Заказчик" as operator
+participant "Система планирования маршрута" as planingsystem
+participant "ЦОДД" as TSODD
+participant "Связь" as connection
+
+participant "Блок шифрования каналов" as shifr
+
+participant "Оркестратор задач" as orkestr
+
+participant "Планировщик маршрута" as planing_navigation
+participant "Комплексирование" as komplex #LimeGreen
+participant "Навигация ИНС" as navigation_ins #Red
+participant "Навигация GNSS " as navigation_gnss #Red
+
+operator -> planingsystem : Информация о заказе
+planingsystem -> TSODD : Зашифрованный маршрутный \n лист (хэш)
+planingsystem -> connection : Зашифрованный маршрутный \n лист (хэш)
+connection -> shifr : Зашифрованный маршрутный \n лист (хэш)
+shifr -> shifr : Расшифровка маршрутного \n листа
+shifr -> orkestr : Маршрутный лист(хэш)
+orkestr -> orkestr : Сверка хэша
+orkestr -> planing_navigation : Маршрутный лист
+
+navigation_gnss -[#Red]> komplex : Текущие координаты(GNSS)
+navigation_ins -[#Red]> komplex : Текущие координаты(ИНС)
+komplex -[#Green]> komplex : Комплексирование
+komplex -[#Green]> planing_navigation : Координаты
+planing_navigation -[#Green]> planing_navigation : Планрование маршрута
+planing_navigation -[#Green]> orkestr : Рассчитанный маршрут \n и \n текущие координаты
+orkestr -[#Green]> shifr : Рассчитанный маршрут \n и \n текущие координаты

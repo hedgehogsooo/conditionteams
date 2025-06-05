@@ -1,0 +1,44 @@
+@startuml Проверка НС-4,7
+title Выполнение задания
+autonumber
+
+
+participant "Аварийный блок" as emergency_bloc #LimeGreen
+participant "Аварийное снижение скорости" as reduction_speed #LimeGreen
+
+participant "Оркестратор задач" as orkestr
+
+participant "Управление движением " as motion_control #Red
+participant "Руление" as taxiing #Red
+participant "Система руления" as system_taxiing #Red
+participant "Управление двигателем" as engine_management #Red
+participant "Разгон и торможение" as acceleration_and_braking #Red
+participant "Сигнальные системы" as signal_system #Red
+
+
+
+motion_control -[#Red]> taxiing : поломанные управляющие команды
+motion_control ++
+taxiing ++
+taxiing -[#Red]> system_taxiing : Управляющие команды
+taxiing --
+system_taxiing ++
+system_taxiing -> system_taxiing : Выполнение управляющих команд
+system_taxiing --
+
+motion_control -[#Red]> engine_management : поломанные управляющие команды
+engine_management ++
+engine_management -[#Red]> acceleration_and_braking : Управляющие команды
+engine_management --
+acceleration_and_braking ++ 
+acceleration_and_braking -> acceleration_and_braking : Выполнение управляющих команд
+acceleration_and_braking --
+
+motion_control -[#Red]> signal_system : поломанные управляющие команды
+signal_system ++ 
+signal_system -[#Red]> signal_system: Выполнение управляющий команд 
+signal_system --
+
+emergency_bloc -[#Green]> reduction_speed : Не соблюдение маршрутного листа\n(нарушение скоростного режима)
+reduction_speed -[#Green]> reduction_speed : Плавна остановка т\с
+emergency_bloc -> orkestr : Сообщение об остановке т\с 

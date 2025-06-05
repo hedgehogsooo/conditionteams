@@ -1,0 +1,529 @@
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.9.1
+    container_name: zookeeper
+    environment:
+      - ZOOKEEPER_CLIENT_PORT=2181
+      - ZOOKEEPER_TICK_TIME=2000
+      # - ZOOKEEPER_DATA_DIR=/var/lib/zookeeper/data
+      # - ZOOKEEPER_DATA_LOG_DIR=/var/lib/zookeeper/log
+    ports:
+     - "2181:2181"
+    logging:
+      driver: "none"   
+    # volumes:
+    #   - zookeeper_data:/var/lib/zookeeper/data
+    #   - zookeeper_log:/var/lib/zookeeper/log
+
+    networks:
+      - kafka-network
+
+
+  broker:
+    image: confluentinc/cp-kafka:7.9.1
+    container_name: broker
+    ports:
+      - "9092:9092"
+    expose:
+     - "29092"
+    depends_on:
+      - zookeeper
+    env_file: ./modules/broker/config/.env
+    logging:
+      driver: 'none'
+    networks:
+      - kafka-network
+
+
+  monitor:
+    build: ./modules/monitor
+    entrypoint:
+      - bash
+      - -c
+      - |
+        echo 'Giving Kafka a bit of time to start up…'
+        sleep 20
+        venv/bin/python start.py /shared/config.ini
+    container_name: monitor
+    environment:
+      - MODULE_NAME=monitor
+    volumes:
+      - ./shared:/shared
+    depends_on:
+      - broker
+    networks:
+      - kafka-network
+
+
+  customer:
+    build: ./modules/customer
+    entrypoint:
+      - bash
+      - -c
+      - |
+        echo 'Giving Kafka a bit of time to start up…'
+        sleep 20
+        venv/bin/python start.py /shared/config.ini
+    container_name: customer
+    environment:
+      - MODULE_NAME=customer
+    volumes:
+      - ./modules/customer/storage:/storage
+    ports:
+      - "6001:6001"
+    depends_on:
+      - monitor
+    networks:
+      - kafka-network
+
+
+  base:
+    build: ./modules/base
+    container_name: base
+    entrypoint: ["bash", "-c", "sleep 20 && venv/bin/python start.py /shared/config.ini"]
+    environment:
+      - MODULE_NAME=base
+      - MODULE_PORT=6002
+    volumes:
+      - ./shared:/shared
+    ports:
+      - 6002:6002
+    depends_on:
+      - customer
+    networks:
+      - kafka-network
+
+
+  tsodd:
+    build: ./modules/tsodd
+    container_name: tsodd
+    entrypoint: ["bash", "-c", "sleep 20 && venv/bin/python start.py /shared/config.ini"]
+    environment:
+      - MODULE_NAME=tsodd
+      - MODULE_PORT=6003
+    volumes:
+      - ./shared:/shared
+    ports:
+      - 6003:6003
+    depends_on:
+      - base
+    networks:
+      - kafka-network
+
+
+  planningsystem:
+    build: ./modules/planningsystem
+    container_name: planingsystem
+    entrypoint: ["bash", "-c", "sleep 20 && venv/bin/python start.py /shared/config.ini"]
+    environment:
+      - MODULE_NAME=planningsystem
+      - MODULE_PORT=6004
+    volumes:
+      - ./shared:/shared
+    ports:
+      - 6004:6004
+    depends_on:
+      - base
+    networks:
+      - kafka-network
+
+
+  connection:
+    build: ./modules/connection
+    container_name: connection
+    entrypoint: ["bash", "-c", "sleep 20 && venv/bin/python start.py /shared/config.ini"]
+    environment:
+      - MODULE_NAME=connection
+      - MODULE_PORT=6005
+    volumes:
+      - ./shared:/shared
+    ports:
+      - 6005:6005
+    depends_on:
+      - planningsystem
+    networks:
+      - kafka-network
+
+
+  channel_encryption:
+    build: ./modules/channel_encryption
+    container_name: channel_encryption
+    entrypoint: ["bash", "-c", "sleep 20 && venv/bin/python start.py /shared/config.ini"]
+    environment:
+      - MODULE_NAME=channel_encryption
+      - MODULE_PORT=6006
+    volumes:
+      - ./shared:/shared
+    ports:
+      - 6006:6006
+    depends_on:
+      - connection
+    networks:
+      - kafka-network
+
+
+  task_orchestrator:
+    build: ./modules/task_orchestrator
+    container_name: task_orchestrator
+    entrypoint: ["bash", "-c", "sleep 20 && venv/bin/python start.py /shared/config.ini"]
+    environment:
+      - MODULE_NAME=task_orchestrator
+      - MODULE_PORT=6007
+    volumes:
+      - ./shared:/shared
+    ports:
+      - 6007:6007
+    depends_on:
+      - channel_encryption
+    networks:
+      - kafka-network
+
+
+  integration:
+    build: ./modules/integration
+    container_name: integration
+    entrypoint: ["bash", "-c", "sleep 20 && venv/bin/python start.py /shared/config.ini"]
+    environment:
+      - MODULE_NAME=integration
+      - MODULE_PORT=6008
+    volumes:
+      - ./shared:/shared
+    ports:
+      - 6008:6008
+    depends_on:
+      - navigation_ins
+      - navigation_gnss
+    networks:
+      - kafka-network
+
+
+  navigation_ins:
+    build: ./modules/navigation_ins
+    container_name: navigation_ins
+    entrypoint: ["bash", "-c", "sleep 20 && venv/bin/python start.py /shared/config.ini"]
+    environment:
+      - MODULE_NAME=navigation_ins
+      - MODULE_PORT=6009
+    volumes:
+      - ./shared:/shared
+    ports:
+      - 6009:6009
+    depends_on:
+      - monitor
+    networks:
+      - kafka-network
+
+
+  navigation_gnss:
+    build: ./modules/navigation_gnss
+    container_name: navigation_gnss
+    entrypoint: ["bash", "-c", "sleep 20 && venv/bin/python start.py /shared/config.ini"]
+    environment:
+      - MODULE_NAME=navigation_gnss
+      - MODULE_PORT=6010
+    volumes:
+      - "./shared:/shared"
+    ports:
+      - 6010:6010
+    depends_on:
+      - monitor
+    networks:
+      - kafka-network
+
+
+  cargo_monitoring_system:
+    build: ./modules/cargo_monitoring_system
+    container_name: cargo_monitoring_system
+    entrypoint: ["bash", "-c", "sleep 20 && venv/bin/python start.py /shared/config.ini"]
+    environment:
+      - MODULE_NAME=cargo_monitoring_system
+      - MODULE_PORT=6011
+    volumes:
+      - "./shared:/shared"
+    ports:
+      - 6011:6011
+    depends_on:
+      - monitor
+    networks:
+      - kafka-network
+
+
+  route_planner:
+    build: ./modules/route_planner
+    container_name: route_planner
+    entrypoint: ["bash", "-c", "sleep 20 && venv/bin/python start.py /shared/config.ini"]
+    environment:
+      - MODULE_NAME=route_planner
+      - MODULE_PORT=6012
+    volumes:
+      - ./shared:/shared
+    depends_on:
+      - integration
+    ports:
+      - 6012:6012
+    networks:
+      - kafka-network
+
+
+  camers:
+    build: ./modules/camers
+    container_name: camers
+    entrypoint: ["bash", "-c", "sleep 20 && venv/bin/python start.py /shared/config.ini"]
+    environment:
+      - MODULE_NAME=camers
+      - MODULE_PORT=6013
+    volumes:
+      - "./shared:/shared"
+    ports:
+      - 6013:6013
+    depends_on:
+      - monitor
+    networks:
+      - kafka-network
+
+
+  lidar:
+    build: ./modules/lidar
+    container_name: lidar
+    entrypoint: ["bash", "-c", "sleep 20 && venv/bin/python start.py /shared/config.ini"]
+    environment:
+      - MODULE_NAME=lidar
+      - MODULE_PORT=6014
+    volumes:
+      - "./shared:/shared"
+    ports:
+      - 6014:6014
+    depends_on:
+      - monitor
+    networks:
+      - kafka-network
+
+
+  ir_sensors:
+    build: ./modules/ir_sensors
+    container_name: ir_sensors
+    entrypoint: ["bash", "-c", "sleep 20 && venv/bin/python start.py /shared/config.ini"]
+    environment:
+      - MODULE_NAME=ir_sensors
+      - MODULE_PORT=6015
+    volumes:
+      - "./shared:/shared"
+    ports:
+      - 6015:6015
+    depends_on:
+      - monitor
+    networks:
+      - kafka-network
+
+
+  data_processing:
+    build: ./modules/data_processing
+    container_name: data_processing
+    entrypoint: ["bash", "-c", "sleep 20 && venv/bin/python start.py /shared/config.ini"]
+    environment:
+      - MODULE_NAME=data_processing
+      - MODULE_PORT=6016
+    volumes:
+      - "./shared:/shared"
+    ports:
+      - 6016:6016
+    depends_on:
+      - ir_sensors
+      - lidar
+      - camers
+    networks:
+      - kafka-network
+
+
+  decision_making:
+    build: ./modules/decision_making
+    container_name: Decision_making
+    entrypoint: ["bash", "-c", "sleep 20 && venv/bin/python start.py /shared/config.ini"]
+    environment:
+      - MODULE_NAME=decision_making
+      - MODULE_PORT=6017
+    volumes:
+      - "./shared:/shared"
+    ports:
+      - 6017:6017
+    depends_on:
+      - data_processing
+    networks:
+      - kafka-network
+
+
+  motion_control:
+    build: ./modules/motion_control
+    container_name: motion_control
+    entrypoint: ["bash", "-c", "sleep 20 && venv/bin/python start.py /shared/config.ini"]
+    environment:
+      - MODULE_NAME=motion_control
+      - MODULE_PORT=6018
+    volumes:
+      - "./shared:/shared"
+    ports:
+      - 6018:6018
+    depends_on:
+      - task_orchestrator
+    networks:
+      - kafka-network
+
+
+  taxiing:
+    build: ./modules/taxiing
+    container_name: taxiing
+    entrypoint: ["bash", "-c", "sleep 20 && venv/bin/python start.py /shared/config.ini"]
+    environment:
+      - MODULE_NAME=taxiing
+      - MODULE_PORT=6019
+    volumes:
+      - "./shared:/shared"
+    ports:
+      - 6019:6019
+    depends_on:
+      - motion_control
+    networks:
+      - kafka-network
+
+
+  taxiing_system:
+    build: ./modules/taxiing_system
+    container_name: taxiing_system
+    entrypoint: ["bash", "-c", "sleep 20 && venv/bin/python start.py /shared/config.ini"]
+    environment:
+      - MODULE_NAME=taxiing_system
+      - MODULE_PORT=6020
+    volumes:
+      - "./shared:/shared"
+    ports:
+      - 6020:6020
+    depends_on:
+      - motion_control
+    networks:
+      - kafka-network
+  
+
+  engin_management:
+    build: ./modules/engin_management
+    container_name: engin_management
+    entrypoint: ["bash", "-c", "sleep 20 && venv/bin/python start.py /shared/config.ini"]
+    environment:
+      - MODULE_NAME=engin_management
+      - MODULE_PORT=6021
+    volumes:
+      - "./shared:/shared"
+    ports:
+      - 6021:6021
+    depends_on:
+      - motion_control
+    networks:
+      - kafka-network
+
+
+  acceleration_and_deceleration:
+    build: ./modules/acceleration_and_deceleration
+    container_name: acceleration_and_deceleration
+    entrypoint: ["bash", "-c", "sleep 20 && venv/bin/python start.py /shared/config.ini"]
+    environment:
+      - MODULE_NAME=acceleration_and_deceleration
+      - MODULE_PORT=6022
+    volumes:
+      - "./shared:/shared"
+    ports:
+      - 6022:6022
+    depends_on:
+      - motion_control
+    networks:
+      - kafka-network
+
+
+  alarm_systems:
+    build: ./modules/alarm_systems
+    container_name: alarm_systems
+    entrypoint: ["bash", "-c", "sleep 20 && venv/bin/python start.py /shared/config.ini"]
+    environment:
+      - MODULE_NAME=alarm_systems
+      - MODULE_PORT=6023
+    volumes:
+      - "./shared:/shared"
+    ports:
+      - 6023:6023
+    depends_on:
+      - motion_control
+    networks:
+      - kafka-network
+
+  emergency_unit:
+    build: ./modules/emergency_unit
+    container_name: emergency_unit
+    entrypoint: ["bash", "-c", "sleep 20 && venv/bin/python start.py /shared/config.ini"]
+    environment:
+      - MODULE_NAME=emergency_unit
+      - MODULE_PORT=6024
+    volumes:
+      - "./shared:/shared"
+    ports:
+      - 6024:6024
+    depends_on:
+      - cargo_monitoring_system
+    networks:
+      - kafka-network
+
+      
+  emergency_speed_reduction:
+    build: ./modules/emergency_speed_reduction
+    container_name: emergency_speed_reduction
+    entrypoint: ["bash", "-c", "sleep 20 && venv/bin/python start.py /shared/config.ini"]
+    environment:
+      - MODULE_NAME=emergency_speed_reduction
+      - MODULE_PORT=6025
+    volumes:
+      - "./shared:/shared"
+    ports:
+      - 6025:6025
+    depends_on:
+      - emergency_unit
+    networks:
+      - kafka-network
+
+  self_diagnostic:
+    build: ./modules/self_diagnostic
+    container_name: self_diagnostic
+    entrypoint: ["bash", "-c", "sleep 20 && venv/bin/python start.py /shared/config.ini"]
+    environment:
+      - MODULE_NAME=self_diagnostic
+      - MODULE_PORT=6026
+    volumes:
+      - "./shared:/shared"
+    ports:
+      - 6026:6026
+    depends_on:
+      - monitor
+    networks:
+      - kafka-network
+
+  emulated:
+    build: ./modules/emulated
+    container_name: emulated
+    entrypoint: ["bash", "-c", "sleep 20 && venv/bin/python start.py /shared/config.ini"]
+    environment:
+      - MODULE_NAME=emulated
+      - MODULE_PORT=6070
+    volumes:
+      - "./shared:/shared"
+    ports:
+      - 6070:6070
+    depends_on:
+      - monitor
+    networks:
+      - kafka-network
+
+
+
+networks:
+  kafka-network:
+    driver: bridge
+
+# # volumes:
+# #   zookeeper_data:
+# #   zookeeper_log:

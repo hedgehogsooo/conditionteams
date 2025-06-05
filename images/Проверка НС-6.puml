@@ -1,0 +1,33 @@
+@startuml Проверка НС-7
+title Выполнение задания
+autonumber
+participant "Аварийный блок" as emergency_bloc #LimeGreen
+participant "Аварийное снижение скорости" as reduction_speed #LimeGreen
+
+participant "Управление движением " as motion_control 
+participant "Принятие решений" as spr #Red
+participant "Обработка данных" as data
+participant "ИК-датчик" as ir_sensor
+participant "Лидар" as lidar
+participant "Камеры" as camers
+
+
+
+camers -> data : Данные с камер 
+camers++
+camers--
+lidar -> data : Данные с лидара 
+lidar++
+lidar--
+ir_sensor -> data : Данные с ИК-датчиков 
+ir_sensor++
+ir_sensor--
+
+data --
+data -> spr : Данные окружающей среды т/с
+spr -[#Red]> spr : Расчет управляющих команд 
+spr -[#Red]> motion_control : Управляющие команды
+spr--
+
+emergency_bloc -[#Green]> reduction_speed : Не соблюдение маршрутного листа 
+reduction_speed -[#Green]> reduction_speed : Плавная остановка т\с

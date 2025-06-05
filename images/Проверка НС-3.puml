@@ -1,0 +1,16 @@
+@startuml Проверка НС-3
+title Выполнение задания
+autonumber
+
+participant "Оркестратор задач" as orkestr
+participant "Аварийный блок" as emergency_bloc #LimeGreen
+participant "Аварийное снижение скорости" as reduction_speed #LimeGreen
+
+participant "Самодиагностика" as diagnostik #Red
+
+group Следование по маршруту
+diagnostik -[#Red]> orkestr ++: Не верное состояние системы двигателя или тормозов
+
+orkestr -> orkestr : Сообщение от блока управление движением \nоб аварийной ситуации
+orkestr -[#Green]> emergency_bloc : Аварийная обстановка
+emergency_bloc -[#Green]> reduction_speed : Аварийное снижение скорости
