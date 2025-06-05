@@ -18,9 +18,6 @@ app.config['JSON_AS_ASCII'] = False
 
 class Customer:
     def __init__(self):
-        """
-        Инициализация класса Customer.
-        """
         self.mission_info = None
         self.route_sheet = None
         self.routes = self._load_routes()

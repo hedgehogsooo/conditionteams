@@ -74,12 +74,12 @@ def receive_route_sheet():
     else:
         return jsonify({"error": "Ошибка при передаче маршрутного листа в систему планирования"}), 500
 
-@app.route('/route_sheets', methods=['GET'])
-def get_route_sheets():
-    """
-    Возвращает список всех маршрутных листов.
-    """
-    return jsonify({"route_sheets": base.route_sheets})
+# @app.route('/route_sheets', methods=['GET'])
+# def get_route_sheets():
+#     """
+#     Возвращает список всех маршрутных листов.
+#     """
+#     return jsonify({"route_sheets": base.route_sheets})
 
 @app.route('/mission_complete', methods=['POST'])
 def mission_complete():
